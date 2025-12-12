@@ -1,0 +1,90 @@
+/* 3. RECURSION - File Explorer Folder Size Computation
+Problem:
+Compute the total size of a folder that contains nested folders and files.*/
+
+package assessment;
+
+import java.util.*;
+
+	public class q3 {
+
+	    static abstract class Node {
+	        final String name;
+	        Node(String name){ this.name = name; }
+	    }
+
+	    static class FileNode extends Node {
+	        final long size;
+	        FileNode(String name, long size){ super(name); this.size = size; }
+	        public String toString(){
+	        	return name + "(" + size + ")"; }
+	    }
+
+	    static class FolderNode extends Node {
+	        final List<Node> children = new ArrayList<>();
+	        FolderNode(String name){ super(name); }
+	        void add(Node n){ children.add(n); }
+	    }
+
+	    static class Result {
+	        final long totalSize;
+	        final List<FileNode> top3;
+	        Result(long t, List<FileNode> f){ totalSize=t; top3=f; }
+	    }
+
+	    public static class Calculator {
+	        private final Map<FolderNode, Result> memo = new IdentityHashMap<>();
+
+	        public Result compute(FolderNode root){
+	            return dfs(root, new HashSet<>());
+	        }
+
+	        private Result dfs(FolderNode folder, Set<FolderNode> visiting){
+	            if (visiting.contains(folder)) return new Result(0, List.of());
+	            if (memo.containsKey(folder)) return memo.get(folder);
+
+	            visiting.add(folder);
+	            long total = 0;
+	            List<FileNode> top = new ArrayList<>();
+
+	            for (Node n : folder.children){
+	                if (n instanceof FileNode){
+	                    FileNode f = (FileNode) n;
+	                    total += f.size;
+	                    top.add(f);
+	                } else {
+	                    Result r = dfs((FolderNode)n, visiting);
+	                    total += r.totalSize;
+	                    top.addAll(r.top3);
+	                }
+	            }
+
+	            top.sort((a,b)->Long.compare(b.size,a.size));
+	            if (top.size() > 3) top = new ArrayList<>(top.subList(0,3));
+
+	            visiting.remove(folder);
+	            Result res = new Result(total, top);
+	            memo.put(folder, res);
+	            return res;
+	        }
+	    }
+
+	    public static void main(String[] args){
+	        FolderNode root = new FolderNode("root");
+	        root.add(new FileNode("a.txt",100));
+	        root.add(new FileNode("b.mp4",5000));
+
+	        FolderNode sub = new FolderNode("sub");
+	        sub.add(new FileNode("c.bin",2000));
+	        root.add(sub);
+
+	        sub.add(root); 
+
+	        Calculator calc = new Calculator();
+	        Result r = calc.compute(root);
+
+	        System.out.println("Total size = " + r.totalSize);
+	        for (FileNode f : r.top3) System.out.println(f);
+	    }
+	}
+
