@@ -1,0 +1,102 @@
+/* 8. HEAP - YouTube Real-Time Trending Videos Problem: Each video has a dynamic "trending score" updated in real-time. Return top K trending videos */
+
+package problems1212;
+
+import java.util.*;
+
+public class q8 {
+
+    static class Video {
+        String videoID;
+        double score;
+        long lastWatched; 
+
+        Video(String videoID, double score, long lastWatched) {
+            this.videoID = videoID;
+            this.score = score;
+            this.lastWatched = lastWatched;
+        }
+    }
+    private Map<String, Video> map = new HashMap<>();
+
+    private PriorityQueue<Video> maxHeap = new PriorityQueue<>(
+        (a, b) -> {
+            if (b.score != a.score) return Double.compare(b.score, a.score);
+            return Long.compare(b.lastWatched, a.lastWatched);
+        }
+    );
+
+    private static final long DAY_MS = 24 * 60 * 60 * 1000;
+
+    public void updateScore(String videoID, double score) {
+        long now = System.currentTimeMillis();
+
+        if (map.containsKey(videoID)) {
+            Video v = map.get(videoID);
+            maxHeap.remove(v); 
+            v.score = score;
+            v.lastWatched = now;
+            maxHeap.add(v);
+        } else {
+            Video v = new Video(videoID, score, now);
+            map.put(videoID, v);
+            maxHeap.add(v);
+        }
+    }
+
+    public void decayScores() {
+        long now = System.currentTimeMillis();
+        List<Video> temp = new ArrayList<>();
+
+        while (!maxHeap.isEmpty()) {
+            Video v = maxHeap.poll();
+            if (now - v.lastWatched >= DAY_MS) {
+                v.score *= 0.9; 
+            }
+            temp.add(v);
+        }
+
+        maxHeap.addAll(temp); 
+    }
+
+    public List<Video> getTopK(int k) {
+        List<Video> res = new ArrayList<>();
+        List<Video> temp = new ArrayList<>();
+
+        for (int i = 0; i < k && !maxHeap.isEmpty(); i++) {
+            Video v = maxHeap.poll();
+            res.add(v);
+            temp.add(v);
+        }
+
+        maxHeap.addAll(temp); 
+        return res;
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        q8 tv = new q8();
+        long now = System.currentTimeMillis();
+
+        tv.updateScore("vid1", 100);
+        Thread.sleep(10);
+        tv.updateScore("vid2", 120);
+        Thread.sleep(10);
+        tv.updateScore("vid3", 110);
+        Thread.sleep(10);
+        tv.updateScore("vid4", 120);
+
+        System.out.println("Top 2 videos:");
+        for (Video v : tv.getTopK(2)) {
+            System.out.println(v.videoID + " score: " + v.score);
+        }
+
+        Thread.sleep(10);
+        tv.map.get("vid1").lastWatched -= 24 * 60 * 60 * 1000 + 1000;
+        tv.decayScores();
+
+        System.out.println("\nAfter decay:");
+        for (Video v : tv.getTopK(4)) {
+            System.out.println(v.videoID + " score: " + v.score);
+        }
+    }
+}
