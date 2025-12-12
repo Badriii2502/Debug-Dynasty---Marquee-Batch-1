@@ -1,0 +1,83 @@
+/*STRINGS - Gmail Autocorrect Suggestion Engine
+Problem:
+Given a typed incorrect word and a dictionary of valid words,
+find the closest valid suggestions using minimum edit distance.*/
+
+package assessment;
+
+import java.util.*;
+
+public class q2 {
+
+    private List<String> dictionary = new ArrayList<>();
+
+    public void buildDictionary(List<String> dict) {
+        dictionary.addAll(dict);
+    }
+
+    private int editDistance(String a, String b) {
+        int n = a.length(), m = b.length();
+        int[] prev = new int[m + 1];
+        int[] curr = new int[m + 1];
+
+        for (int j = 0; j <= m; j++) prev[j] = j;
+
+        for (int i = 1; i <= n; i++) {
+            curr[0] = i;
+            for (int j = 1; j <= m; j++) {
+                if (a.charAt(i - 1) == b.charAt(j - 1))
+                    curr[j] = prev[j - 1];
+                else
+                    curr[j] = 1 + Math.min(prev[j - 1], Math.min(prev[j], curr[j - 1]));
+            }
+            int[] temp = prev;
+            prev = curr;
+            curr = temp;
+        }
+        return prev[m];
+    }
+
+    public List<String> getTop3Suggestions(String query) {
+        PriorityQueue<String> pq = new PriorityQueue<>(3, (w1, w2) -> {
+            int d1 = editDistance(query, w1);
+            int d2 = editDistance(query, w2);
+            if (d1 != d2) return d2 - d1;
+            return w2.compareTo(w1);
+        });
+
+        for (String word : dictionary) {
+            if (pq.size() < 3) {
+                pq.add(word);
+            } else {
+                String worst = pq.peek();
+                int worstDist = editDistance(query, worst);
+                int currDist = editDistance(query, word);
+                if (currDist < worstDist || (currDist == worstDist && word.compareTo(worst) < 0)) {
+                    pq.poll();
+                    pq.add(word);
+                }
+            }
+        }
+
+        List<String> result = new ArrayList<>(pq);
+        Collections.sort(result);
+        return result;
+    }
+
+    public static void main(String[] args) {
+        q2 engine = new q2();
+
+        List<String> dict = Arrays.asList(
+            "gmail", "game", "goal", "email", "gamer", "glam",
+            "camel", "gamma", "gml", "gmal"
+        );
+
+        engine.buildDictionary(dict);
+
+        String typedWord = "gmai";
+        List<String> suggestions = engine.getTop3Suggestions(typedWord);
+
+        System.out.println("Typed word: " + typedWord);
+        System.out.println("Top suggestions: " + suggestions);
+    }
+}
