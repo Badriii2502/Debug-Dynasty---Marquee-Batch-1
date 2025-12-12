@@ -1,0 +1,117 @@
+/* 4. LINKED LIST - Music Playlist Engine (Spotify-like)
+Problem:
+Build a playlist system with:
+ playNext()
+ playPrev()
+ addSong()
+ removeSong()
+ prevent duplicate songs /*
+
+
+package assessment;
+	
+	import java.util.*;
+
+	public class q4 {
+
+	    private static class Node {
+	        String song;
+	        Node prev, next;
+	        Node(String s) { song = s; }
+	    }
+
+	    private Node head, tail, current;
+	    private HashMap<String, Node> map = new HashMap<>();  
+
+	    public boolean addSong(String song) {
+	        if (map.containsKey(song)) return false; 
+
+	        Node newNode = new Node(song);
+
+	        if (head == null) {  
+	            head = tail = current = newNode;
+	        } else {
+	            tail.next = newNode;
+	            newNode.prev = tail;
+	            tail = newNode;
+	        }
+
+	        map.put(song, newNode);
+	        return true;
+	    }
+
+	    public boolean removeSong(String song) {
+	        if (!map.containsKey(song)) return false;
+
+	        Node node = map.get(song);
+
+	        if (node == current) {
+	            if (current.next != null) current = current.next;
+	            else current = current.prev;
+	        }
+
+	        if (node.prev != null) node.prev.next = node.next;
+	        else head = node.next;
+
+	        if (node.next != null) node.next.prev = node.prev;
+	        else tail = node.prev;
+
+	        map.remove(song);
+	        return true;
+	    }
+
+	    public String playNext() {
+	        if (current == null || current.next == null) return null;
+	        current = current.next;
+	        return current.song;
+	    }
+
+	    public String playPrev() {
+	        if (current == null || current.prev == null) return null;
+	        current = current.prev;
+	        return current.song;
+	    }
+
+	    public String currentSong() {
+	        return current == null ? null : current.song;
+	    }
+
+	    public List<String> exportForward() {
+	        List<String> list = new ArrayList<>();
+	        Node temp = head;
+	        while (temp != null) {
+	            list.add(temp.song);
+	            temp = temp.next;
+	        }
+	        return list;
+	    }
+
+	    public List<String> exportBackward() {
+	        List<String> list = new ArrayList<>();
+	        Node temp = tail;
+	        while (temp != null) {
+	            list.add(temp.song);
+	            temp = temp.prev;
+	        }
+	        return list;
+	    }
+
+	    public static void main(String[] args) {
+	        q4 p = new q4();
+
+	        p.addSong("Song 1");
+	        p.addSong("Song 2");
+	        p.addSong("Song 3");
+	        p.addSong("Song 4");
+
+	        System.out.println("Current: " + p.currentSong());
+	        System.out.println("Next: " + p.playNext());
+	        System.out.println("Prev: " + p.playPrev());
+
+	        p.removeSong("Song 2");
+	        System.out.println("After removal current: " + p.currentSong());
+
+	        System.out.println("Forward: " + p.exportForward());
+	        System.out.println("Backward: " + p.exportBackward());
+	    }
+	}
