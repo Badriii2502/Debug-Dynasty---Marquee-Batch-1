@@ -1,0 +1,144 @@
+/* 10. GRAPH + DIJKSTRA - Minimum Toll Path (Google Maps) Problem: Given a road network with tolls and traffic weights, find the cheapest path from source to destination. */
+
+
+package problems1212;
+
+import java.util.*;
+
+public class q10 {
+
+    static class Edge {
+        final int id, from, to;
+        final double toll, traffic;
+        Edge(int id,int from,int to,double toll,double traffic){
+            this.id=id; this.from=from; this.to=to; this.toll=toll; this.traffic=traffic;
+        }
+        double cost(){ return toll + 0.5 * traffic; }
+        public String toString(){
+            return from + "->" + to + " (toll=" + toll + ",tr=" + traffic + ",c=" + cost() + ")";
+        }
+    }
+
+    static class Graph {
+        final int n;
+        final List<List<Edge>> adj;
+        int nextId=0;
+        Graph(int n){
+            this.n=n;
+            adj=new ArrayList<>(n);
+            for(int i=0;i<n;i++) adj.add(new ArrayList<>());
+        }
+        int addEdge(int u,int v,double toll,double traffic){
+            Edge e=new Edge(nextId++,u,v,toll,traffic);
+            adj.get(u).add(e);
+            return e.id;
+        }
+    }
+
+    static class Path {
+        final double cost;
+        final List<Integer> nodes;
+        final List<Integer> edges;
+        Path(double c,List<Integer> n,List<Integer> e){
+            cost=c; nodes=n; edges=e;
+        }
+    }
+
+    static Path dijkstra(Graph g,int src,int dst,Set<Integer> banned){
+        int n=g.n;
+        double[] dist=new double[n];
+        Arrays.fill(dist,Double.POSITIVE_INFINITY);
+        int[] prev=new int[n];
+        int[] prevEdge=new int[n];
+        Arrays.fill(prev,-1);
+        Arrays.fill(prevEdge,-1);
+        dist[src]=0;
+
+        class Entry { int node; double d; Entry(int n,double d){ this.node=n; this.d=d; } }
+
+        PriorityQueue<Entry> pq=new PriorityQueue<>(Comparator.comparingDouble(a->a.d));
+        pq.add(new Entry(src,0));
+
+        boolean[] seen=new boolean[n];
+
+        while(!pq.isEmpty()){
+            Entry cur=pq.poll();
+            int u=cur.node;
+            if(seen[u]) continue;
+            seen[u]=true;
+            if(u==dst) break;
+
+            for(Edge e: g.adj.get(u)){
+                if(banned!=null && banned.contains(e.id)) continue;
+                int v=e.to;
+                double nd=dist[u]+e.cost();
+                if(nd < dist[v]){
+                    dist[v]=nd;
+                    prev[v]=u;
+                    prevEdge[v]=e.id;
+                    pq.add(new Entry(v,nd));
+                }
+            }
+        }
+
+        if(Double.isInfinite(dist[dst])) return null;
+
+        LinkedList<Integer> nodes=new LinkedList<>();
+        LinkedList<Integer> edges=new LinkedList<>();
+        for(int cur=dst; cur!=-1; cur=prev[cur]){
+            nodes.addFirst(cur);
+            if(prevEdge[cur]!=-1) edges.addFirst(prevEdge[cur]);
+        }
+        return new Path(dist[dst],new ArrayList<>(nodes),new ArrayList<>(edges));
+    }
+
+    static Edge findEdge(Graph g,int id){
+        for(List<Edge> list : g.adj)
+            for(Edge e : list)
+                if(e.id==id) return e;
+        return null;
+    }
+
+    static void printPath(Graph g,String title,Path p){
+        System.out.println(title);
+        System.out.printf("Total cost: %.3f%n", p.cost);
+        System.out.println("Cheapest path: " + p.nodes);
+        System.out.println("List of intersections: " + p.nodes);
+        System.out.print("Edge details: ");
+        for(int id : p.edges) System.out.print(findEdge(g,id) + "  ");
+        System.out.println("\n");
+    }
+
+    static void compute(Graph g,int src,int dst){
+        Path best=dijkstra(g,src,dst,Collections.emptySet());
+        if(best==null){ System.out.println("No path"); return; }
+        printPath(g,"=== Best ===",best);
+
+        Path second=null;
+        for(int eid : best.edges){
+            Set<Integer> ban=new HashSet<>();
+            ban.add(eid);
+            Path cand=dijkstra(g,src,dst,ban);
+            if(cand!=null && (second==null || cand.cost < second.cost))
+                second=cand;
+        }
+
+        if(second==null){
+            System.out.println("=== Second-best ===");
+            System.out.println("No alternative\n");
+        } else {
+            printPath(g,"=== Second-best ===",second);
+        }
+    }
+
+    public static void main(String[] args){
+        Graph g=new Graph(4);
+        g.addEdge(0,1,2.0,4.0);
+        g.addEdge(0,2,5.0,2.0);
+        g.addEdge(1,2,1.0,6.0);
+        g.addEdge(1,3,4.0,2.0);
+        g.addEdge(2,3,1.0,1.0);
+        g.addEdge(0,3,10.0,0.0);
+        compute(g,0,3);
+    }
+}
