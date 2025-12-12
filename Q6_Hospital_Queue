@@ -1,0 +1,84 @@
+/* 6. QUEUE - Hospital Emergency Priority System Problem: Patients arrive with name, severity, and arrival time. Create a system to pick patients in correct priority order. */
+
+package problems1212;
+
+import java.util.*;
+
+public class q6 {
+
+    static class Patient {
+        String name;
+        int severity;
+        long arrivalMin;
+
+        Patient(String name, int severity, long arrivalMin) {
+            this.name = name;
+            this.severity = severity;
+            this.arrivalMin = arrivalMin;
+        }
+
+        public String toString() {
+            return name + " (sev:" + severity + ", t=" + arrivalMin + "m)";
+        }
+    }
+
+    private final Comparator<Patient> comp = (a, b) -> {
+        if (a.severity != b.severity) return Integer.compare(b.severity, a.severity);
+        return Long.compare(a.arrivalMin, b.arrivalMin);
+    };
+
+    private final PriorityQueue<Patient> critical = new PriorityQueue<>(comp);
+    private final PriorityQueue<Patient> normal = new PriorityQueue<>(comp);
+
+    private long lastCriticalTreatedAt = -1;
+    private static final long FIVE_MIN = 5;
+
+    public void addPatient(String name, int severity, long arrivalMin) {
+        Patient p = new Patient(name, severity, arrivalMin);
+        if (severity >= 8) critical.add(p);
+        else normal.add(p);
+    }
+
+    public Patient treatNext(long currentMin) {
+        boolean needCritical =
+            lastCriticalTreatedAt >= 0 &&
+            (currentMin - lastCriticalTreatedAt >= FIVE_MIN) &&
+            !critical.isEmpty();
+
+        if (needCritical) {
+            Patient p = critical.poll();
+            if (p != null) lastCriticalTreatedAt = currentMin;
+            return p;
+        }
+
+        Patient p = critical.poll();
+        if (p != null) {
+            lastCriticalTreatedAt = currentMin;
+            return p;
+        }
+
+        return normal.poll();
+    }
+
+    public static void main(String[] args) {
+        q6 s = new q6();
+
+        s.addPatient("Alice", 9, 0);
+        s.addPatient("Bob", 5, 1);
+        s.addPatient("Charlie", 8, 2);
+
+        System.out.println(s.treatNext(0));
+        System.out.println(s.treatNext(1));
+        System.out.println(s.treatNext(2));
+
+        s.addPatient("Sam", 4, 3);
+        s.addPatient("Meera", 3, 4);
+
+        System.out.println(s.treatNext(3));
+        System.out.println(s.treatNext(4));
+
+        s.addPatient("Ravi", 8, 6);
+        System.out.println(s.treatNext(7));
+        System.out.println(s.treatNext(8));
+    }
+}
