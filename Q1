@@ -1,0 +1,65 @@
+/* 1. ARRAYS - Fuel-Efficient Route Detection (Google Maps). You are given an array representing fuel cost per kilo-meter for a long trip. Find the most fuel-efficient contiguous route segment of length ≥ k.
+
+package assessment;
+
+public class q1 {
+
+    public static long[] findRoute(int[] a, int k) {
+        int n = a.length;
+        long[] pref = new long[n + 1];
+        for (int i = 0; i < n; i++) 
+        	pref[i + 1] = pref[i] + a[i];
+
+        long bestCost = Long.MAX_VALUE;
+        int bestS = 0, bestE = 0, bestLen = Integer.MAX_VALUE;
+        int bestStart = -1;
+
+        for (int end = k - 1; end < n; end++) {
+            int start = end - k + 1;
+
+            if (bestStart == -1) bestStart = start;
+            else {
+                long np = pref[start], cp = pref[bestStart];
+                if (np > cp || (np == cp && start > bestStart)) bestStart = start;
+            }
+
+            long cost = pref[end + 1] - pref[bestStart];
+            int len = end - bestStart + 1;
+
+            if (cost < bestCost ||
+               (cost == bestCost && len < bestLen) ||
+               (cost == bestCost && len == bestLen && bestStart < bestS)) {
+
+                bestCost = cost;
+                bestS = bestStart;
+                bestE = end;
+                bestLen = len;
+            }
+        }
+
+        return new long[]{bestS, bestE, bestCost};
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {5, 1, 2, 3, 1, 6, 1, 1};
+        int k = 3;
+
+        long[] res = findRoute(arr, k);
+        int s = (int) res[0];
+        int e = (int) res[1];
+        long cost = res[2];
+
+        StringBuilder seg = new StringBuilder();
+        seg.append("[");
+        for (int i = s; i <= e; i++) {
+            seg.append(arr[i]);
+            if (i < e) seg.append(", ");
+        }
+        seg.append("]");
+
+        System.out.println("Best route starts at index " + s);
+        System.out.println("Ends at index " + e);
+        System.out.println("Total minimum fuel cost = " + cost);
+     
+    }
+}
