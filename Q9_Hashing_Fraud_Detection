@@ -1,0 +1,79 @@
+/* 9. HASHING - Real-Time Fraud Detection System Problem: Given a continuous stream of transactions, detect duplicates within the last k seconds. */
+
+
+package problems1212;
+
+//9. HASHING - Real-Time Fraud Detection System Problem: Given a continuous stream of transactions, detect duplicates within the last k seconds.
+import java.util.*;
+
+public class q9 {
+
+  static class Tx {
+      String id;
+      double amount;
+      long time;
+      String key;
+      Tx(String id, double amount, long time){
+          this.id = id;
+          this.amount = amount;
+          this.time = time;
+          this.key = id + "|" + amount;
+      }
+  }
+
+  private final long windowSeconds;
+  private final Deque<Tx> timeWindow = new ArrayDeque<>();
+  private final Map<String, Deque<Tx>> recent = new HashMap<>();
+  private final Set<String> suspicious = new HashSet<>();
+  private long count = 0;
+
+  public q9(long k){
+      this.windowSeconds = k;
+  }
+
+  public boolean process(String id, double amount, long t){
+      removeOld(t);
+
+      Tx tx = new Tx(id, amount, t);
+
+      Deque<Tx> same = recent.computeIfAbsent(tx.key, k -> new ArrayDeque<>());
+      boolean duplicate = !same.isEmpty();
+
+      if (duplicate) suspicious.add(id);
+
+      same.addLast(tx);
+      timeWindow.addLast(tx);
+      count++;
+
+      return duplicate;
+  }
+
+  private void removeOld(long now){
+      long cut = now - windowSeconds;
+
+      while (!timeWindow.isEmpty() && timeWindow.peekFirst().time < cut){
+          Tx old = timeWindow.removeFirst();
+          Deque<Tx> list = recent.get(old.key);
+          if (list != null){
+              list.removeFirstOccurrence(old);
+              if (list.isEmpty()) recent.remove(old.key);
+          }
+      }
+  }
+
+  public boolean fraudFound(){ return !suspicious.isEmpty(); }
+  public Set<String> suspiciousIds(){ return suspicious; }
+  public long totalProcessed(){ return count; }
+
+  public static void main(String[] args){
+      q9 f = new q9(10);
+      f.process("t1",100,1);
+      f.process("t2",50,2);
+      f.process("t1",100,3);
+      f.process("t1",200,4);
+      f.process("t2",50,15);
+      System.out.println(f.fraudFound());
+      System.out.println(f.suspiciousIds());
+      System.out.println(f.totalProcessed());
+  }
+}
