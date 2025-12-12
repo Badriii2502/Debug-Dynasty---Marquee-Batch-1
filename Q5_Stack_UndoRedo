@@ -1,0 +1,82 @@
+/* 5. STACK - Google Docs Undo/Redo Manager Problem: Design the undo/redo engine for Google Docs supporting text editing. */
+
+package problems1212;
+
+//Design the undo/redo engine for Google Docs supporting text editing.
+import java.util.*;
+
+	public class q5 {
+
+	    static class Action {
+	        String type;
+	        String text;
+	        Action(String t, String x){ type = t; text = x; }
+	    }
+
+	    private StringBuilder doc = new StringBuilder();
+	    private Deque<Action> undo = new ArrayDeque<>();
+	    private Deque<Action> redo = new ArrayDeque<>();
+	    private int opCount = 0;
+
+	    public void insert(String x){
+	        doc.append(x);
+	        pushUndo(new Action("INS", x));
+	        redo.clear();
+	        opCount++;
+	    }
+
+	    public void delete(int k){
+	        int n = doc.length();
+	        if (k > n) k = n;
+	        String removed = doc.substring(n - k, n);
+	        doc.delete(n - k, n);
+	        pushUndo(new Action("DEL", removed));
+	        redo.clear();
+	        opCount++;
+	    }
+
+	    private void pushUndo(Action a){
+	        if (undo.size() == 50) undo.removeFirst();
+	        undo.addLast(a);
+	    }
+
+	    public void undo(){
+	        if (undo.isEmpty()) return;
+	        Action a = undo.removeLast();
+	        if ("INS".equals(a.type)){
+	            int n = a.text.length();
+	            doc.delete(doc.length() - n, doc.length());
+	        } else {
+	            doc.append(a.text);
+	        }
+	        redo.addLast(a);
+	        opCount++;
+	    }
+
+	    public void redo(){
+	        if (redo.isEmpty()) return;
+	        Action a = redo.removeLast();
+	        if ("INS".equals(a.type)) doc.append(a.text);
+	        else {
+	            int n = a.text.length();
+	            doc.delete(doc.length() - n, doc.length());
+	        }
+	        undo.addLast(a);
+	        opCount++;
+	    }
+
+	    public String getDocument(){ return doc.toString(); }
+	    public int getTotalOps(){ return opCount; }
+
+	    public static void main(String[] args){
+	        q5 ed = new q5();
+	        ed.insert("Hello ");
+	        ed.insert("World");
+	        ed.delete(5);
+	        ed.undo();
+	        ed.redo();
+	        ed.insert("!!!");
+	        System.out.println("Final Document: " + ed.getDocument());
+	        System.out.println("Total Ops: " + ed.getTotalOps());
+	    }
+	}
